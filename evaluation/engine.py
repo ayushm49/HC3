@@ -37,6 +37,14 @@ class HC3Engine(MinimalEngine):
         self.model.load_state_dict(state_dict)
 
         self.model.to(self.device)
+        self.model.eval() 
+
+        self.W_elo = 2100
+        self.B_elo = 2100
+
+        self.default_time = 300
+        self.max_time = self.default_time
+        self.inc = 0
 
         print("Initialization Done.")
     
@@ -45,29 +53,38 @@ class HC3Engine(MinimalEngine):
         # print(time_limit)
         t0 = time.time()
 
+        last_4_moves = list(board.move_stack)[-4:]
+        self.context = ['?']*4 + [move.uci() for move in last_4_moves]
+        self.context = self.context[-4:] # crop out the '?'
+
+        if not board.turn: # black to move
+            self.context = [self.handler.mirror_move(m) for m in self.context] # mirror context
+
+
+        print(self.context)
+
         if isinstance(time_limit.time, float):
             W_time = time_limit.time
             B_time = time_limit.time
-            self.max_time = 60
+
+            self.max_time = self.default_time
             self.inc = 0
             timing = False
         else:
             timing = True
             if len(board.move_stack) < 4:
                 self.max_time = time_limit.white_clock
-            W_time = time_limit.white_clock if isinstance(time_limit.white_clock, float) else 300
-            B_time = time_limit.white_clock if isinstance(time_limit.black_clock, float) else 300
+            W_time = time_limit.white_clock if isinstance(time_limit.white_clock, float) else self.default_time
+            B_time = time_limit.white_clock if isinstance(time_limit.black_clock, float) else self.default_time
             self.inc = time_limit.white_inc if isinstance(time_limit.white_inc, float) else 0
 
-        self.W_elo = 2300
-        self.B_elo = 2300
-        repetition = 'F'
+        repetition = 'F' # CURRENTLY DOES NOT HANDLE REPETITION!!!
 
         inp = self.handler.input_from_board(board, self.max_time, self.inc, W_time, B_time, self.W_elo, self.B_elo, self.context, repetition).to(self.device)
 
         # forward pass
         out, _ = self.model(inp)
-        move_final, speed_final, eval_str = self.handler.sample_output(out)
+        move_final, speed_final, eval_str = self.handler.sample_output(out, is_white_move=board.turn)
         move = chess.Move.from_uci(move_final)
         if move not in board.legal_moves:
             print("Illegal Move Attempted:", move) 
@@ -84,5 +101,6 @@ class HC3Engine(MinimalEngine):
                 print('Waiting', time_to_stall)
                 time.sleep(time_to_stall)
             
+        
         return PlayResult(move=move,ponder=None)
         
