@@ -5,6 +5,8 @@ When learning a new opening or practicing common middle games, it’s helpful to
 
 The most well-known chess engine, **Stockfish**, uses search algorithms to find the move leading to the most favorable position at a given depth. Neural network-based engines like **AlphaZero** and **Leela Chess Zero** use self-play reinforcement learning to optimize move choice for winning. More recently, **Maia**, built with a Leela-like CNN architecture, learned from real online Lichess games rather than self-play. As a result, Maia’s moves were not always the best but instead reflected the most natural response for each position.
 
+**HC3** correctly predicts the human move on average **54.4%** of the time, which slightly improves upon Maia2 (about 53%) and Maia1 (about 52%) on **significantly less** training data and time. 
+
 ## Key Features
 
 **HC3** builds on the Maia chess engine with four significant improvements:
